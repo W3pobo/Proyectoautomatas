@@ -1,0 +1,55 @@
+.ast-visualizer {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  height: 100%;
+}
+
+.ast-visualizer h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.visualization-container {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 10px;
+  background: #f9f9f9;
+  /* --- CORRECCIÓN --- */
+  /* El SVG mide 600px de alto, así que el contenedor debe ser igual o más grande */
+  max-height: 600px; 
+  overflow: auto;
+}
+
+.placeholder {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.ast-raw {
+  margin-top: 20px;
+}
+
+.ast-raw details {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.ast-raw summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.ast-raw pre {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 300px;
+  font-size: 12px;
+}

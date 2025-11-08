@@ -1,0 +1,97 @@
+.object-code-viewer {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    margin-top: 20px;
+}
+
+.object-code-viewer .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.object-code-viewer h3 {
+    margin: 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.copy-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.copy-button:hover {
+    background: #0056b3;
+}
+
+.copy-button.copied {
+    background: #28a745;
+}
+
+.code-container {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    background: #f6f8fa;
+    overflow: auto;
+    max-height: 400px;
+    margin-bottom: 15px;
+}
+
+.python-code {
+    margin: 0;
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #24292e;
+    white-space: pre-wrap;
+}
+
+.execution-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.execution-info h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+}
+
+.execution-info ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.execution-info li {
+    margin-bottom: 5px;
+    color: #6c757d;
+}
+
+.execution-info code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.placeholder {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-style: italic;
+}
