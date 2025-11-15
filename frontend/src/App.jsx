@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import CodeEditor from './components/CodeEditor/CodeEditor';
 import ASTVisualizer from './components/ASTVisualizer/ASTVisualizer';
 import SymbolTable from './components/SymbolTable/SymbolTable';
@@ -7,7 +7,7 @@ import OptimizationViewer from './components/OptimizationViewer/OptimizationView
 import MetricsDashboard from './components/MetricsDashboard/MetricsDashboard';
 import CompilationControls from './components/CompilationControls/CompilationControls';
 import TokensViewer from './components/TokensViewer/TokensViewer';
-import ObjectCodeViewer from './components/ObjectCodeViewer/ObjectCodeViewer'; // ← NUEVO
+import ObjectCodeViewer from './components/ObjectCodeViewer/ObjectCodeViewer';
 import { compileCode } from './services/CompilerApi';
 import './styles/App.css';
 
@@ -31,10 +31,18 @@ function main() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('editor');
+  
+  // --- 1. MODIFICACIÓN: Añadir estado para el modo paso a paso ---
+  const [isStepMode, setIsStepMode] = useState(false);
+  
+  const [highlightedLine, setHighlightedLine] = useState(null);
+  const editorRef = useRef();
 
   const handleCompile = async () => {
     setLoading(true);
     setError(null);
+    setHighlightedLine(null);
+    setIsStepMode(false); // <-- 2. MODIFICACIÓN: Desactivar modo paso a paso
     
     try {
       const result = await compileCode(code);
@@ -47,8 +55,58 @@ function main() {
     }
   };
 
-  const handleStepByStep = () => {
-    console.log('Compilación paso a paso');
+  // --- 3. MODIFICACIÓN: Lógica completa para handleStepByStep ---
+  const handleStepByStep = async () => {
+    console.log('Iniciando compilación en modo Paso a Paso');
+    setLoading(true);
+    setError(null);
+    setHighlightedLine(null);
+    
+    try {
+      // 3a. Ejecuta la compilación normal para obtener todos los datos
+      const result = await compileCode(code);
+      setCompilationResult(result);
+      
+      // 3b. Activa el modo paso a paso
+      setIsStepMode(true);
+      // 3c. Cambia a la pestaña de cuádruplos
+      setActiveTab('quadruples');
+      
+    } catch (err) {
+      setError(err.message || 'Error al compilar el código');
+    } finally {
+      setLoading(false);
+    }
+  };
+  // --- FIN DE LAS MODIFICACIONES ---
+
+
+  // (Tus funciones de hover/click para el AST se quedan igual)
+  const handleAstNodeHover = (nodeInfo) => {
+    if (nodeInfo && nodeInfo.line > 0) {
+      setHighlightedLine(nodeInfo.line);
+      
+      if (editorRef.current && editorRef.current.highlightLine) {
+        editorRef.current.highlightLine(nodeInfo.line);
+      }
+    } else {
+      setHighlightedLine(null);
+      if (editorRef.current && editorRef.current.clearHighlight) {
+        editorRef.current.clearHighlight();
+      }
+    }
+  };
+
+  const handleAstNodeClick = (nodeInfo) => {
+    if (nodeInfo && nodeInfo.line > 0) {
+      setHighlightedLine(nodeInfo.line);
+      
+      if (editorRef.current && editorRef.current.gotoLine) {
+        editorRef.current.gotoLine(nodeInfo.line, nodeInfo.column || 0);
+      }
+      
+      setActiveTab('editor');
+    }
   };
 
   return (
@@ -67,9 +125,15 @@ function main() {
           />
           
           <CodeEditor 
+            ref={editorRef}
             code={code}
             onChange={setCode}
             errors={compilationResult?.errors || []}
+            highlightedLine={highlightedLine}
+            onLineClick={(line) => {
+              console.log("Línea clickeada en editor:", line);
+              setHighlightedLine(line);
+            }}
           />
         </div>
 
@@ -106,7 +170,7 @@ function main() {
               Optimización
             </button>
             <button 
-              className={activeTab === 'objectCode' ? 'active' : ''} // ← NUEVA PESTAÑA
+              className={activeTab === 'objectCode' ? 'active' : ''}
               onClick={() => setActiveTab('objectCode')}
             >
               Código Python
@@ -131,6 +195,8 @@ function main() {
               <ASTVisualizer 
                 ast={compilationResult?.ast}
                 code={code}
+                onNodeHover={handleAstNodeHover}
+                onNodeClick={handleAstNodeClick}
               />
             )}
             
@@ -142,8 +208,9 @@ function main() {
             
             {activeTab === 'quadruples' && (
               <QuadruplesViewer 
-                intermediateCode={compilationResult?.intermediate_code} // <-- ¡CORREGIDO!
+                intermediateCode={compilationResult?.intermediate_code}
                 optimizedQuadruples={compilationResult?.optimized_code}
+                isStepMode={isStepMode} // <-- 4. MODIFICACIÓN: Pasar la prop
               />
             )}
             
@@ -154,7 +221,7 @@ function main() {
               />
             )}
             
-            {activeTab === 'objectCode' && ( // ← NUEVO COMPONENTE
+            {activeTab === 'objectCode' && (
               <ObjectCodeViewer 
                 objectCode={compilationResult?.object_code}
               />
@@ -170,6 +237,24 @@ function main() {
           {error && (
             <div className="error-message">
               Error: {error}
+            </div>
+          )}
+
+          {/* Indicador de línea resaltada */}
+          {highlightedLine && (
+            <div className="highlight-info">
+              <span>Línea resaltada: {highlightedLine}</span>
+              <button 
+                onClick={() => {
+                  setHighlightedLine(null);
+                  if (editorRef.current && editorRef.current.clearHighlight) {
+                    editorRef.current.clearHighlight();
+                  }
+                }}
+                className="clear-highlight-btn"
+              >
+                ✕
+              </button>
             </div>
           )}
         </div>

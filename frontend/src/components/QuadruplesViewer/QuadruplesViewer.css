@@ -182,3 +182,45 @@
     color: #666;
     font-style: italic;
 }
+
+/* --- ESTILOS PARA LOS NUEVOS CONTROLES DE PASOS --- */
+
+.step-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.step-controls button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.step-controls button:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.step-controls button:disabled {
+    background: #c0c0c0;
+    cursor: not-allowed;
+}
+
+.step-counter {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    min-width: 100px;
+    text-align: center;
+}

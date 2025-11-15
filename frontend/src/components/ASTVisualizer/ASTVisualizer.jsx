@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import './ASTVisualizer.css';
 
-const ASTVisualizer = ({ ast, code }) => {
+const ASTVisualizer = ({ ast, code, onNodeHover, onNodeClick }) => {
   const svgRef = useRef();
+  const [selectedNode, setSelectedNode] = useState(null);
 
   useEffect(() => {
     if (!ast || !svgRef.current) {
@@ -16,25 +17,16 @@ const ASTVisualizer = ({ ast, code }) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // --- INICIO DE LA MODIFICACIÓN: Añadir Márgenes ---
-
     const width = 800;
     const height = 600;
-    // Definir márgenes para que el árbol no toque los bordes
     const margin = { top: 50, right: 120, bottom: 50, left: 120 };
-
-    // Calcular el ancho y alto interno
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
     svg.attr('width', width).attr('height', height);
 
-    // Crear un grupo principal <g> y moverlo según los márgenes
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
-    
-    // --- FIN DE LA MODIFICACIÓN ---
-
 
     // Convertir AST a formato D3
     const root = buildTree(ast);
@@ -45,17 +37,14 @@ const ASTVisualizer = ({ ast, code }) => {
       return;
     }
 
-    // --- MODIFICACIÓN: Usar innerHeight e innerWidth ---
-    // Configurar el layout del árbol para que ocupe el espacio interno
     const treeLayout = d3.tree().size([innerHeight, innerWidth]);
     const rootNode = d3.hierarchy(root);
     treeLayout(rootNode);
 
     console.log("Tree layout nodes:", rootNode.descendants());
 
-    // --- MODIFICACIÓN: Dibujar en el grupo <g> ---
     // Dibujar enlaces
-    g.append('g') // <--- CAMBIADO DE 'svg' a 'g'
+    g.append('g')
       .selectAll('line')
       .data(rootNode.links())
       .enter()
@@ -68,21 +57,68 @@ const ASTVisualizer = ({ ast, code }) => {
       .attr('stroke-width', 2);
 
     // Dibujar nodos
-    const node = g.append('g') // <--- CAMBIADO DE 'svg' a 'g'
+    const node = g.append('g')
       .selectAll('g')
       .data(rootNode.descendants())
       .enter()
       .append('g')
       .attr('transform', d => `translate(${d.y},${d.x})`);
 
-    // ... (el resto del código de 'node.append('circle')' y 'node.append('text')' queda igual)
-    
+    // Círculos de nodos con interactividad
     node.append('circle')
-      .attr('r', 25) 
+      .attr('r', 25)
       .attr('fill', d => getNodeColor(d.data.type))
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1);
+      .attr('stroke', d => d.data === selectedNode ? '#FF0000' : '#333')
+      .attr('stroke-width', d => d.data === selectedNode ? 3 : 1)
+      .style('cursor', 'pointer')
+      .on('mouseover', function(event, d) {
+        // Resaltar nodo
+        d3.select(this)
+          .attr('stroke', '#FF0000')
+          .attr('stroke-width', 3);
+        
+        // Emitir evento de hover
+        if (onNodeHover) {
+          onNodeHover({
+            node: d.data,
+            line: d.data.line,
+            column: d.data.column
+          });
+        }
+      })
+      .on('mouseout', function(event, d) {
+        // Restaurar apariencia normal (excepto si está seleccionado)
+        if (d.data !== selectedNode) {
+          d3.select(this)
+            .attr('stroke', '#333')
+            .attr('stroke-width', 1);
+        }
+        
+        // Emitir evento de fin de hover
+        if (onNodeHover) {
+          onNodeHover(null);
+        }
+      })
+      .on('click', function(event, d) {
+        // Seleccionar nodo
+        setSelectedNode(d.data);
+        d3.select(this)
+          .attr('stroke', '#FF0000')
+          .attr('stroke-width', 3);
+        
+        // Emitir evento de click
+        if (onNodeClick) {
+          onNodeClick({
+            node: d.data,
+            line: d.data.line,
+            column: d.data.column
+          });
+        }
+        
+        event.stopPropagation();
+      });
 
+    // Etiqueta principal del nodo
     node.append('text')
       .text(d => d.data.name)
       .attr('text-anchor', 'middle')
@@ -92,6 +128,7 @@ const ASTVisualizer = ({ ast, code }) => {
       .style('font-weight', 'bold')
       .style('pointer-events', 'none');
 
+    // Valor del nodo (si existe)
     node.append('text')
       .text(d => d.data.value ? `"${d.data.value}"` : '')
       .attr('text-anchor', 'middle')
@@ -100,7 +137,30 @@ const ASTVisualizer = ({ ast, code }) => {
       .style('font-size', '8px')
       .style('pointer-events', 'none');
 
-  }, [ast]);
+    // Información de posición (línea/columna)
+    node.append('text')
+      .text(d => d.data.line ? `L${d.data.line}:C${d.data.column}` : '')
+      .attr('text-anchor', 'middle')
+      .attr('dy', 35)
+      .attr('fill', '#666')
+      .style('font-size', '7px')
+      .style('pointer-events', 'none');
+
+    // Click en el SVG para deseleccionar
+    svg.on('click', function(event) {
+      if (event.target === this) {
+        setSelectedNode(null);
+        node.selectAll('circle')
+          .attr('stroke', '#333')
+          .attr('stroke-width', 1);
+        
+        if (onNodeClick) {
+          onNodeClick(null);
+        }
+      }
+    });
+
+  }, [ast, selectedNode, onNodeHover, onNodeClick]);
 
   const buildTree = (node) => {
     if (!node) {
@@ -108,12 +168,14 @@ const ASTVisualizer = ({ ast, code }) => {
       return null;
     }
     
-    console.log("Building tree node:", node.type, node.value);
+    console.log("Building tree node:", node.type, node.value, "Line:", node.line);
     
     const treeNode = {
       name: getDisplayName(node.type),
       value: node.value || '',
       type: node.type,
+      line: node.line || 0,
+      column: node.column || 0,
       children: []
     };
 
@@ -182,6 +244,19 @@ const ASTVisualizer = ({ ast, code }) => {
   return (
     <div className="ast-visualizer">
       <h3>Árbol de Sintaxis Abstracta (AST)</h3>
+      <div className="interactive-info">
+        {selectedNode ? (
+          <div className="node-info">
+            <strong>Nodo seleccionado:</strong> {selectedNode.name} 
+            {selectedNode.value && ` (${selectedNode.value})`}
+            {selectedNode.line > 0 && ` - Línea ${selectedNode.line}, Columna ${selectedNode.column}`}
+          </div>
+        ) : (
+          <div className="node-info">
+            <em>Pasa el cursor sobre los nodos para resaltar el código correspondiente</em>
+          </div>
+        )}
+      </div>
       <div className="visualization-container">
         <svg ref={svgRef}></svg>
       </div>

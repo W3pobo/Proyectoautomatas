@@ -9,6 +9,25 @@ class Parser:
         self.token_index = 0
         self.errors = []
     
+    def create_ast_node(self, node_type: str, value: str = None, children: List[ASTNode] = None) -> ASTNode:
+        """Crea un nodo AST - VERSIÓN SIMPLIFICADA"""
+        line = self.current_token.line if self.current_token else None
+        column = self.current_token.column if self.current_token else None
+        
+        # Crear nodo sin children primero, luego agregarlos
+        node = ASTNode(
+            type=node_type,
+            value=value,
+            line=line,
+            column=column
+        )
+        
+        # Agregar children después de crear el nodo
+        if children:
+            node.children = children
+            
+        return node
+    
     def parse(self, tokens: List[Token]) -> Tuple[Optional[ASTNode], List[str]]:
         self.tokens = tokens
         self.token_index = 0
@@ -22,7 +41,6 @@ class Parser:
         try:
             ast = self.parse_program()
             
-            # Si hay tokens restantes, es un error
             if self.current_token:
                 self.errors.append(f"Tokens inesperados después del programa: {self.current_token}")
             
@@ -54,15 +72,14 @@ class Parser:
         return True
     
     def consume(self, token_type: str, value: str = None) -> bool:
-        """Consume un token si coincide, de lo contrario reporta error"""
         if self.expect(token_type, value):
             self.advance()
             return True
         return False
     
     def parse_program(self) -> ASTNode:
-        """Program → Function*"""
-        node = ASTNode(type="Program", children=[])
+        node = self.create_ast_node("Program")
+        node.children = []
         
         while self.current_token:
             if self.current_token.type == "KEYWORD" and self.current_token.value == "function":
@@ -70,13 +87,11 @@ class Parser:
                 if function_node:
                     node.children.append(function_node)
             else:
-                # Si encontramos algo que no es una función, paramos
                 break
         
         return node
     
     def parse_function(self) -> Optional[ASTNode]:
-        """Function → 'function' IDENTIFIER '(' ')' Block"""
         if not self.consume("KEYWORD", "function"):
             return None
         
@@ -84,7 +99,7 @@ class Parser:
             return None
         
         function_name = self.current_token.value
-        self.advance()  # consume function name
+        self.advance()
         
         if not self.consume("DELIMITER", "("):
             return None
@@ -96,31 +111,25 @@ class Parser:
         if not block_node:
             return None
         
-        return ASTNode(
-            type="FunctionDeclaration",
-            value=function_name,
-            children=[block_node]
-        )
+        return self.create_ast_node("FunctionDeclaration", function_name, [block_node])
     
     def parse_block(self) -> Optional[ASTNode]:
-        """Block → '{' Statement* '}'"""
         if not self.consume("DELIMITER", "{"):
             return None
         
-        node = ASTNode(type="Block", children=[])
+        node = self.create_ast_node("Block")
+        node.children = []
         
         while self.current_token and self.current_token.value != "}":
             statement = self.parse_statement()
             if statement:
                 node.children.append(statement)
             else:
-                # Si no podemos parsear un statement, salimos del loop
-                # Es importante avanzar para evitar un bucle infinito si hay un error
                 if self.current_token:
                     self.errors.append(f"Error al parsear statement cerca de '{self.current_token.value}' en línea {self.current_token.line}")
-                    self.advance() # Avanza para intentar recuperarse
+                    self.advance()
                 else:
-                    break # Fin de los tokens
+                    break
         
         if not self.consume("DELIMITER", "}"):
             return None
@@ -128,7 +137,6 @@ class Parser:
         return node
     
     def parse_statement(self) -> Optional[ASTNode]:
-        """Statement → Declaration | Assignment | IfStatement | WhileStatement | ReturnStatement"""
         if not self.current_token:
             return None
         
@@ -144,74 +152,62 @@ class Parser:
             elif self.current_token.value == "print":
                 return self.parse_print_statement()
         
-        # Assignment or Expression
         return self.parse_assignment_or_expression()
     
     def parse_declaration(self) -> Optional[ASTNode]:
-        """Declaration → Type IDENTIFIER ('=' Expression)? ';'"""
         type_token = self.current_token
-        self.advance()  # consume type
+        self.advance()
         
         if not self.expect("IDENTIFIER"):
             return None
         
         identifier = self.current_token.value
-        self.advance()  # consume identifier
+        self.advance()
         
-        # Check for assignment
         initializer = None
         if self.current_token and self.current_token.value == "=":
-            self.advance()  # consume '='
+            self.advance()
             initializer = self.parse_expression()
         
         if not self.consume("DELIMITER", ";"):
             return None
         
-        children = [ASTNode(type="Identifier", value=identifier)]
+        children = [self.create_ast_node("Identifier", identifier)]
         if initializer:
             children.append(initializer)
         
-        return ASTNode(
-            type="VariableDeclaration",
-            value=type_token.value,
-            children=children
-        )
+        return self.create_ast_node("VariableDeclaration", type_token.value, children)
     
     def parse_assignment_or_expression(self) -> Optional[ASTNode]:
-        """Assignment → IDENTIFIER '=' Expression ';'"""
-        # Try to parse as assignment
         if self.current_token and self.current_token.type == "IDENTIFIER":
             identifier = self.current_token.value
             save_index = self.token_index
             
-            self.advance()  # consume identifier
+            self.advance()
             
             if self.current_token and self.current_token.value == "=":
-                self.advance()  # consume '='
+                self.advance()
                 expression = self.parse_expression()
                 
                 if expression and self.current_token and self.current_token.value == ";":
-                    self.advance()  # consume ';'
-                    return ASTNode(
-                        type="Assignment",
-                        value="=",
-                        children=[
-                            ASTNode(type="Identifier", value=identifier),
+                    self.advance()
+                    return self.create_ast_node(
+                        "Assignment",
+                        "=",
+                        [
+                            self.create_ast_node("Identifier", identifier),
                             expression
                         ]
                     )
             
-            # Not an assignment, rollback and parse as expression
             self.token_index = save_index
             self.current_token = self.tokens[save_index]
         
-        # Parse as expression statement
         expression = self.parse_expression()
         if expression and self.current_token and self.current_token.value == ";":
-            self.advance()  # consume ';'
-            return ASTNode(type="ExpressionStatement", children=[expression])
+            self.advance()
+            return self.create_ast_node("ExpressionStatement", None, [expression])
         
-        # Si no es ni asignación ni expresión seguida de ';', es un error.
         if expression:
             self.errors.append(f"Se esperaba ';' después de la expresión en línea {self.current_token.line}")
         
@@ -245,7 +241,8 @@ class Parser:
         if else_branch:
             children.append(else_branch)
         
-        return ASTNode(type="IfStatement", children=children)
+        # CORRECCIÓN: Sin keyword arguments
+        return self.create_ast_node("IfStatement", None, children)
     
     def parse_while_statement(self) -> Optional[ASTNode]:
         """WhileStatement → 'while' '(' Expression ')' Block"""
@@ -266,7 +263,8 @@ class Parser:
         if not body:
             return None
         
-        return ASTNode(type="WhileStatement", children=[condition, body])
+        # CORRECCIÓN: Sin keyword arguments
+        return self.create_ast_node("WhileStatement", None, [condition, body])
     
     def parse_return_statement(self) -> Optional[ASTNode]:
         """ReturnStatement → 'return' Expression? ';'"""
@@ -281,7 +279,8 @@ class Parser:
             return None
         
         children = [expression] if expression else []
-        return ASTNode(type="ReturnStatement", children=children)
+        # CORRECCIÓN: Sin keyword arguments
+        return self.create_ast_node("ReturnStatement", None, children)
     
     def parse_print_statement(self) -> Optional[ASTNode]:
         """PrintStatement → 'print' '(' Expression ')' ';'"""
@@ -301,22 +300,19 @@ class Parser:
         if not self.consume("DELIMITER", ";"):
             return None
         
-        return ASTNode(type="PrintStatement", children=[expression])
+        # CORRECCIÓN: Sin keyword arguments
+        return self.create_ast_node("PrintStatement", None, [expression])
     
     def parse_expression(self) -> Optional[ASTNode]:
         """Expression → RelationalExpression"""
-        # --- INICIO DE LA MODIFICACIÓN ---
         return self.parse_relational_expression()
-        # --- FIN DE LA MODIFICACIÓN ---
     
-    # --- INICIO DE LA NUEVA FUNCIÓN ---
     def parse_relational_expression(self) -> Optional[ASTNode]:
         """RelationalExpression → AdditiveExpression (('>' | '<' | '==' | '!=') AdditiveExpression)*"""
         left = self.parse_additive_expression()
         if not left:
             return None
         
-        # Asegúrate de que tu Lexer genere 'OPERATOR' para '==' y '!='
         while self.current_token and self.current_token.value in [">", "<", "==", "!="]:
             operator = self.current_token.value
             self.advance()  # consume operator
@@ -324,14 +320,10 @@ class Parser:
             if not right:
                 return None
             
-            left = ASTNode(
-                type="BinaryExpression",
-                value=operator,
-                children=[left, right]
-            )
+            # CORRECCIÓN: Sin keyword arguments
+            left = self.create_ast_node("BinaryExpression", operator, [left, right])
         
         return left
-    # --- FIN DE LA NUEVA FUNCIÓN ---
 
     def parse_additive_expression(self) -> Optional[ASTNode]:
         """AdditiveExpression → MultiplicativeExpression (('+' | '-') MultiplicativeExpression)*"""
@@ -346,11 +338,8 @@ class Parser:
             if not right:
                 return None
             
-            left = ASTNode(
-                type="BinaryExpression",
-                value=operator,
-                children=[left, right]
-            )
+            # CORRECCIÓN: Sin keyword arguments
+            left = self.create_ast_node("BinaryExpression", operator, [left, right])
         
         return left
     
@@ -367,11 +356,8 @@ class Parser:
             if not right:
                 return None
             
-            left = ASTNode(
-                type="BinaryExpression",
-                value=operator,
-                children=[left, right]
-            )
+            # CORRECCIÓN: Sin keyword arguments
+            left = self.create_ast_node("BinaryExpression", operator, [left, right])
         
         return left
     
@@ -381,22 +367,26 @@ class Parser:
             return None
         
         if self.current_token.type == "IDENTIFIER":
-            node = ASTNode(type="Identifier", value=self.current_token.value)
+            # CORRECCIÓN: Sin keyword arguments
+            node = self.create_ast_node("Identifier", self.current_token.value, None)
             self.advance()
             return node
         
         elif self.current_token.type in ["INTEGER", "FLOAT"]:
-            node = ASTNode(type="Literal", value=self.current_token.value)
+            # CORRECCIÓN: Sin keyword arguments
+            node = self.create_ast_node("Literal", self.current_token.value, None)
             self.advance()
             return node
         
         elif self.current_token.type == "STRING":
-            node = ASTNode(type="StringLiteral", value=self.current_token.value)
+            # CORRECCIÓN: Sin keyword arguments
+            node = self.create_ast_node("StringLiteral", self.current_token.value, None)
             self.advance()
             return node
         
         elif self.current_token.type == "BOOLEAN":
-            node = ASTNode(type="BooleanLiteral", value=self.current_token.value)
+            # CORRECCIÓN: Sin keyword arguments
+            node = self.create_ast_node("BooleanLiteral", self.current_token.value, None)
             self.advance()
             return node
         
@@ -416,9 +406,10 @@ class Parser:
     def pretty_print_ast(self, node: ASTNode, level=0):
         """Método auxiliar para imprimir el AST de forma legible"""
         indent = "  " * level
+        position = f" [L{node.line}:C{node.column}]" if node.line else ""
         if node.children:
-            print(f"{indent}{node.type}({node.value or ''})")
+            print(f"{indent}{node.type}({node.value or ''}){position}")
             for child in node.children:
                 self.pretty_print_ast(child, level + 1)
         else:
-            print(f"{indent}{node.type}: {node.value}")
+            print(f"{indent}{node.type}: {node.value}{position}")

@@ -12,13 +12,24 @@
   color: #333;
 }
 
+.interactive-info {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f0f8ff;
+  border: 1px solid #d1ecf1;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.node-info {
+  color: #0c5460;
+}
+
 .visualization-container {
   border: 1px solid #eee;
   border-radius: 4px;
   padding: 10px;
   background: #f9f9f9;
-  /* --- CORRECCIÓN --- */
-  /* El SVG mide 600px de alto, así que el contenedor debe ser igual o más grande */
   max-height: 600px; 
   overflow: auto;
 }
@@ -52,4 +63,16 @@
   overflow: auto;
   max-height: 300px;
   font-size: 12px;
+}
+
+/* Estilos para el resaltado de nodos */
+.ast-node-highlight {
+  stroke: #ff0000 !important;
+  stroke-width: 3px !important;
+}
+
+.ast-node-selected {
+  stroke: #ff0000 !important;
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5));
 }

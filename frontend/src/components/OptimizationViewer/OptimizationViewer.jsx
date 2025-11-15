@@ -2,7 +2,12 @@ import React from 'react';
 import './OptimizationViewer.css';
 
 const OptimizationViewer = ({ original, optimized }) => {
-    if (!original || !optimized) {
+    
+    // --- 1. CORRECCIÓN: Extraer los arrays de los objetos ---
+    const originalQuads = original?.quadruples;
+    const optimizedQuads = optimized?.quadruples;
+
+    if (!originalQuads || !optimizedQuads) {
         return (
             <div className="optimization-viewer">
                 <h3>⚡ Optimización de Código</h3>
@@ -13,7 +18,8 @@ const OptimizationViewer = ({ original, optimized }) => {
         );
     }
 
-    const reduction = ((original.length - optimized.length) / original.length) * 100;
+    // --- 2. CORRECCIÓN: Calcular la reducción usando .length en los arrays ---
+    const reduction = ((originalQuads.length - optimizedQuads.length) / originalQuads.length) * 100;
 
     return (
         <div className="optimization-viewer">
@@ -21,11 +27,12 @@ const OptimizationViewer = ({ original, optimized }) => {
             
             <div className="optimization-stats">
                 <div className="stat-card">
-                    <span className="stat-value">{original.length}</span>
+                    {/* --- 3. CORRECCIÓN: Usar .length en el array --- */}
+                    <span className="stat-value">{originalQuads.length}</span>
                     <span className="stat-label">Cuádruplos Originales</span>
                 </div>
                 <div className="stat-card optimized">
-                    <span className="stat-value">{optimized.length}</span>
+                    <span className="stat-value">{optimizedQuads.length}</span>
                     <span className="stat-label">Cuádruplos Optimizados</span>
                 </div>
                 <div className={`stat-card reduction ${reduction > 0 ? 'positive' : 'neutral'}`}>
@@ -38,7 +45,8 @@ const OptimizationViewer = ({ original, optimized }) => {
                 <div className="code-column">
                     <h4>📄 Código Original</h4>
                     <div className="code-container">
-                        {original.map((quad, index) => (
+                        {/* --- 4. CORRECCIÓN: Hacer .map() sobre el array --- */}
+                        {originalQuads.map((quad, index) => (
                             <div key={index} className="quadruple-line">
                                 <span className="quad-index">[{quad.index}]</span>
                                 <span className="quad-operator">{quad.operator}</span>
@@ -53,7 +61,8 @@ const OptimizationViewer = ({ original, optimized }) => {
                 <div className="code-column">
                     <h4>🚀 Código Optimizado</h4>
                     <div className="code-container">
-                        {optimized.map((quad, index) => (
+                        {/* --- 5. CORRECCIÓN: Hacer .map() sobre el array --- */}
+                        {optimizedQuads.map((quad, index) => (
                             <div key={index} className="quadruple-line optimized">
                                 <span className="quad-index">[{quad.index}]</span>
                                 <span className="quad-operator">{quad.operator}</span>

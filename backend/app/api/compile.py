@@ -1,13 +1,11 @@
-# En: app/api/compile.py
-
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import CompileRequest, CompileResponse, SemanticResult
+from app.models.schemas import CompileRequest, CompileResponse, SemanticResult, IntermediateCode
 from app.compiler.lexer import Lexer
 from app.compiler.parser import Parser
 from app.compiler.semantic import SemanticAnalyzer
 from app.compiler.intermediate import IntermediateCodeGenerator
 from app.compiler.generator import CodeGenerator
-from app.compiler.optimizer import CodeOptimizer  # <--- 1. IMPORTAR EL OPTIMIZADOR
+from app.compiler.optimizer import CodeOptimizer
 import time
 
 router = APIRouter()
@@ -19,9 +17,6 @@ async def compile_code(request: CompileRequest):
     print("=== INICIANDO COMPILACIÓN ===")
     print(f"Código recibido:\n{request.code}")
     
-    # ... (Tu código de Métricas, Lexer, Parser, y Semantic Analyzer queda igual) ...
-    # ... (Lo copio aquí para que sea completo) ...
-
     # Inicializar métricas
     metrics = {
         "compilation_time": 0, "tokens_count": 0, "ast_nodes_count": 0,
@@ -80,11 +75,10 @@ async def compile_code(request: CompileRequest):
     if ast and symbol_table and len(lexer_errors) == 0 and len(parser_errors) == 0 and len(semantic_errors) == 0:
         try:
             code_generator = IntermediateCodeGenerator(symbol_table)
-            intermediate_result = code_generator.generate(ast)
-            intermediate_code = intermediate_result.quadruples
-            metrics["quadruples_count"] = len(intermediate_code)
-            metrics["temporals_count"] = intermediate_result.temporal_counter
-            print(f"Cuádruplos generados: {len(intermediate_code)}")
+            intermediate_code = code_generator.generate(ast)  # Esto devuelve un objeto IntermediateCode
+            metrics["quadruples_count"] = len(intermediate_code.quadruples)
+            metrics["temporals_count"] = intermediate_code.temporal_counter
+            print(f"Cuádruplos generados: {len(intermediate_code.quadruples)}")
         except Exception as e:
             print(f"Error en generación de código intermedio: {str(e)}")
             semantic_errors.append(f"Error en código intermedio: {str(e)}")
@@ -94,13 +88,20 @@ async def compile_code(request: CompileRequest):
     all_warnings = semantic_warnings
     success = len(all_errors) == 0
     
-    # --- 2. AÑADIR EL PASO DE OPTIMIZACIÓN ---
+    # Optimización
     optimized_code = None
-    if intermediate_code and success: # Solo optimizar si no hay errores
+    if intermediate_code and intermediate_code.quadruples and success:
         try:
             optimizer = CodeOptimizer()
-            optimized_code = optimizer.optimize(intermediate_code)
-            print(f"Código optimizado exitosamente: {len(intermediate_code)} -> {len(optimized_code)} cuádruplos")
+            optimized_quadruples = optimizer.optimize(intermediate_code.quadruples)
+            
+            # Crear un nuevo objeto IntermediateCode para el código optimizado
+            optimized_code = IntermediateCode(
+                quadruples=optimized_quadruples,
+                temporal_counter=intermediate_code.temporal_counter,
+                label_counter=intermediate_code.label_counter
+            )
+            print(f"Código optimizado exitosamente: {len(intermediate_code.quadruples)} -> {len(optimized_code.quadruples)} cuádruplos")
         except Exception as e:
             print(f"Error en optimización: {str(e)}")
             all_errors.append(f"Error en optimización: {str(e)}")
@@ -108,10 +109,14 @@ async def compile_code(request: CompileRequest):
     else:
         print("No se pudo optimizar (pasos previos fallidos)")
     
-    # --- 3. MODIFICAR GENERACIÓN DE CÓDIGO OBJETO ---
+    # Generación de código objeto
     object_code = None
     # Decidir qué cuádruplos usar (los optimizados si existen, si no, los originales)
-    quads_to_generate = optimized_code if optimized_code is not None else intermediate_code 
+    quads_to_generate = None
+    if optimized_code and optimized_code.quadruples:
+        quads_to_generate = optimized_code.quadruples
+    elif intermediate_code and intermediate_code.quadruples:
+        quads_to_generate = intermediate_code.quadruples
     
     if quads_to_generate and symbol_table and success:
         try:
@@ -124,7 +129,6 @@ async def compile_code(request: CompileRequest):
             success = False
     else:
         print("No se pudo generar código objeto (pasos previos fallidos)")
-    # --- FIN DE LAS MODIFICACIONES ---
 
     metrics["errors_count"] = len(all_errors)
     metrics["warnings_count"] = len(all_warnings)
@@ -140,7 +144,7 @@ async def compile_code(request: CompileRequest):
             ast=ast,
             symbol_table=symbol_table,
             intermediate_code=intermediate_code,
-            optimized_code=optimized_code, # <-- 4. PASAR EL CÓDIGO OPTIMIZADO
+            optimized_code=optimized_code,
             object_code=object_code,
             errors=all_errors,
             warnings=all_warnings,

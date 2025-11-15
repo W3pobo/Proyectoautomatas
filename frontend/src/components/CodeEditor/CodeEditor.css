@@ -1,70 +1,146 @@
 .code-editor {
-  background: white;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  flex: 1;
+  background: white;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.code-editor h3 {
-  padding: 20px 20px 0;
-  margin-bottom: 15px;
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.editor-header h3 {
+  margin: 0;
   color: #333;
+}
+
+.editor-info {
+  font-size: 12px;
+  color: #666;
+}
+
+.line-highlight-info {
+  background: #fff3cd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ffeaa7;
 }
 
 .editor-container {
+  display: flex;
   flex: 1;
-  border: 1px solid #e9ecef;
-  margin: 0 20px 20px;
-  border-radius: 5px;
-  overflow: hidden;
+  position: relative;
+  overflow: auto;
 }
 
-.code-textarea {
-  width: 100%;
-  height: 400px;
-  border: none;
-  padding: 15px;
-  font-family: 'Courier New', monospace;
+.line-numbers {
+  background: #f8f9fa;
+  padding: 10px 5px;
+  border-right: 1px solid #e9ecef;
+  text-align: right;
+  user-select: none;
+  min-width: 40px;
+}
+
+.line-number {
+  padding: 2px 5px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
-  resize: vertical;
-  background: #f8f9fa;
-  color: #333;
+  color: #6c757d;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.code-textarea:focus {
+.line-number:hover {
+  background: #e9ecef;
+}
+
+.line-number.error-line {
+  background: #f8d7da;
+  color: #721c24;
+  font-weight: bold;
+}
+
+.line-number.highlighted-line {
+  background: #fff3cd;
+  color: #856404;
+  font-weight: bold;
+  border-left: 3px solid #ffc107;
+}
+
+.code-input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
   outline: none;
   background: white;
 }
 
+.code-input:focus {
+  background: #fafafa;
+}
+
 .errors-panel {
-  margin: 0 20px 20px;
-  padding: 15px;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 5px;
+  border-top: 1px solid #ddd;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .errors-panel h4 {
-  margin-bottom: 10px;
-  color: #721c24;
+  margin: 0 0 8px 0;
+  color: #dc3545;
+  font-size: 14px;
 }
 
 .error-item {
+  color: #721c24;
+  font-size: 12px;
+  margin-bottom: 4px;
+  padding: 4px;
+  background: #f8d7da;
+  border-radius: 4px;
+  border-left: 3px solid #dc3545;
+}
+
+.highlight-info {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #fff3cd;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ffeaa7;
   display: flex;
+  align-items: center;
   gap: 10px;
-  padding: 5px 0;
-  border-bottom: 1px solid #f5c6cb;
+  font-size: 12px;
+  color: #856404;
 }
 
-.error-line {
-  font-weight: bold;
-  color: #721c24;
-  min-width: 80px;
+.clear-highlight-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #856404;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
-.error-message {
-  color: #721c24;
+.clear-highlight-btn:hover {
+  background: #ffeaa7;
 }
