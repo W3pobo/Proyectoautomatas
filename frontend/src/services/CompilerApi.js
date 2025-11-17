@@ -54,3 +54,36 @@ export const checkServerConnection = async () => {
     return false;
   }
 };
+
+export const lintCode = async (code) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/lint`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Linting completado:', {
+      errors: result.errors?.length || 0,
+      warnings: result.warnings?.length || 0
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('💥 Error en lintCode:', error);
+    
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('No se puede conectar con el servidor');
+    }
+    
+    throw new Error(error.message || 'Error desconocido en linting');
+  }
+};

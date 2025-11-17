@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import CompileRequest, CompileResponse, SemanticResult, IntermediateCode
+from app.models.schemas import CompileRequest, CompileResponse, SemanticResult, IntermediateCode, LintResponse
 from app.compiler.lexer import Lexer
 from app.compiler.parser import Parser
 from app.compiler.semantic import SemanticAnalyzer
@@ -10,6 +10,78 @@ import time
 
 router = APIRouter()
 
+# Añadir al final del archivo compile.py, antes del cierre del router
+
+@router.post("/lint", response_model=LintResponse)
+async def lint_code(request: CompileRequest):
+    """
+    Análisis rápido para errores en tiempo real (sin generar código)
+    """
+    print("=== EJECUTANDO LINTING EN TIEMPO REAL ===")
+    
+    # Inicializar métricas
+    metrics = {
+        "tokens_count": 0,
+        "ast_nodes_count": 0, 
+        "symbols_count": 0
+    }
+    
+    # Análisis léxico
+    lexer = Lexer()
+    tokens, lexer_errors = lexer.tokenize(request.code)
+    metrics["tokens_count"] = len(tokens)
+    
+    # Análisis sintáctico
+    parser = Parser()
+    ast, parser_errors = parser.parse(tokens)
+    
+    if ast:
+        def count_nodes(node):
+            if not node: return 0
+            count = 1
+            if node.children:
+                for child in node.children: 
+                    count += count_nodes(child)
+            return count
+        metrics["ast_nodes_count"] = count_nodes(ast)
+    
+    # Análisis semántico
+    semantic_errors = []
+    semantic_warnings = []
+    
+    if ast:
+        try:
+            semantic_analyzer = SemanticAnalyzer()
+            semantic_result = semantic_analyzer.analyze(ast)
+            semantic_errors = semantic_result.errors
+            semantic_warnings = semantic_result.warnings
+            
+            def count_symbols(table):
+                if not table: return 0
+                count = len(table.symbols)
+                for child in table.children: 
+                    count += count_symbols(child)
+                return count
+            
+            if semantic_result.symbol_table:
+                metrics["symbols_count"] = count_symbols(semantic_result.symbol_table)
+        except Exception as e:
+            semantic_errors.append(f"Error en análisis semántico: {str(e)}")
+    
+    # Combinar todos los errores
+    all_errors = lexer_errors + parser_errors + semantic_errors
+    all_warnings = semantic_warnings
+    
+    print(f"Linting completado: {len(all_errors)} errores, {len(all_warnings)} advertencias")
+    
+    return LintResponse(
+        errors=all_errors,
+        warnings=all_warnings,
+        tokens_count=metrics["tokens_count"],
+        ast_nodes_count=metrics["ast_nodes_count"],
+        symbols_count=metrics["symbols_count"]
+    )
+    
 @router.post("/compile", response_model=CompileResponse)
 async def compile_code(request: CompileRequest):
     start_time = time.time()

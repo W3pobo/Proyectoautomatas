@@ -135,6 +135,13 @@ class CompileResponse(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+class LintResponse(BaseModel):
+    errors: List[str] = []
+    warnings: List[str] = []
+    tokens_count: Optional[int] = 0
+    ast_nodes_count: Optional[int] = 0
+    symbols_count: Optional[int] = 0
+
 # Actualizar referencias forward
 ASTNode.update_forward_refs()
 SymbolTable.update_forward_refs()

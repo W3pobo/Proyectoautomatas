@@ -5,23 +5,38 @@
 }
 
 .tokens-viewer h3 {
-  margin-bottom: 15px;
-  color: #333;
+  margin-bottom: 20px;
+  color: #1a237e;
+  font-size: 1.3rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tokens-viewer h3::before {
+  content: '🔤';
+  font-size: 1.2rem;
 }
 
 .tokens-info {
-  margin-bottom: 15px;
-  padding: 10px;
-  background: #e7f3ff;
-  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
   font-size: 14px;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  font-weight: 500;
 }
 
 .tokens-container {
   flex: 1;
-  border: 1px solid #e9ecef;
-  border-radius: 5px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   overflow: auto;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .tokens-viewer table {
@@ -31,17 +46,18 @@
 
 .tokens-viewer th,
 .tokens-viewer td {
-  padding: 12px;
+  padding: 14px;
   text-align: left;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #e1e8ed;
 }
 
 .tokens-viewer th {
-  background: #f8f9fa;
-  font-weight: bold;
-  color: #333;
+  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  color: white;
+  font-weight: 600;
   position: sticky;
   top: 0;
+  font-size: 13px;
 }
 
 .tokens-viewer tr:hover {
@@ -49,38 +65,77 @@
 }
 
 .token-type {
-  font-weight: bold;
-  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+  color: #1a237e;
 }
 
 .token-value {
-  font-family: 'Courier New', monospace;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
   background: #f8f9fa;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #e1e8ed;
+  color: #2c3e50;
+  font-weight: 500;
 }
 
 .lexical-errors {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 5px;
+  margin-top: 25px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  border: 1px solid #ef9a9a;
+  border-radius: 8px;
 }
 
 .lexical-errors h4 {
-  margin-bottom: 10px;
-  color: #721c24;
+  margin-bottom: 15px;
+  color: #c62828;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lexical-errors h4::before {
+  content: '⚠️';
+  font-size: 18px;
 }
 
 .error-item {
-  padding: 5px 0;
-  border-bottom: 1px solid #f5c6cb;
-  color: #721c24;
+  padding: 10px 0;
+  border-bottom: 1px solid #ef9a9a;
+  color: #c62828;
+  font-weight: 500;
 }
 
 .placeholder {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
+  padding: 50px;
+  color: #7e8c9a;
+  font-style: italic;
+  font-size: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #e1e8ed;
+}
+
+/* Scrollbar personalizado */
+.tokens-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tokens-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.tokens-container::-webkit-scrollbar-thumb {
+  background: #1a237e;
+  border-radius: 4px;
+}
+
+.tokens-container::-webkit-scrollbar-thumb:hover {
+  background: #283593;
 }

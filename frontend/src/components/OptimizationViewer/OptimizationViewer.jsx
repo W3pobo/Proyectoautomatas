@@ -2,80 +2,92 @@ import React from 'react';
 import './OptimizationViewer.css';
 
 const OptimizationViewer = ({ original, optimized }) => {
-    
-    // --- 1. CORRECCIÓN: Extraer los arrays de los objetos ---
-    const originalQuads = original?.quadruples;
-    const optimizedQuads = optimized?.quadruples;
-
-    if (!originalQuads || !optimizedQuads) {
-        return (
-            <div className="optimization-viewer">
-                <h3>⚡ Optimización de Código</h3>
-                <div className="placeholder">
-                    <p>Compila un programa para visualizar las optimizaciones</p>
-                </div>
+  const renderQuadruples = (quads, title, isOptimized = false) => {
+    if (!quads || !quads.quadruples || quads.quadruples.length === 0) {
+      return (
+        <div className="code-panel">
+          <h4>{title}</h4>
+          <div className={`code-block ${isOptimized ? 'optimized' : 'original'}`}>
+            <div className="placeholder">
+              {isOptimized ? 'No hay código optimizado disponible' : 'No hay código intermedio disponible'}
             </div>
-        );
+          </div>
+        </div>
+      );
     }
 
-    // --- 2. CORRECCIÓN: Calcular la reducción usando .length en los arrays ---
-    const reduction = ((originalQuads.length - optimizedQuads.length) / originalQuads.length) * 100;
-
     return (
-        <div className="optimization-viewer">
-            <h3>⚡ Optimización de Código</h3>
-            
-            <div className="optimization-stats">
-                <div className="stat-card">
-                    {/* --- 3. CORRECCIÓN: Usar .length en el array --- */}
-                    <span className="stat-value">{originalQuads.length}</span>
-                    <span className="stat-label">Cuádruplos Originales</span>
-                </div>
-                <div className="stat-card optimized">
-                    <span className="stat-value">{optimizedQuads.length}</span>
-                    <span className="stat-label">Cuádruplos Optimizados</span>
-                </div>
-                <div className={`stat-card reduction ${reduction > 0 ? 'positive' : 'neutral'}`}>
-                    <span className="stat-value">{reduction.toFixed(1)}%</span>
-                    <span className="stat-label">Reducción</span>
-                </div>
+      <div className="code-panel">
+        <h4>{title}</h4>
+        <div className={`code-block ${isOptimized ? 'optimized' : 'original'}`}>
+          {quads.quadruples.map((quad, index) => (
+            <div key={index} className="quadruple-line">
+              <span className="line-number">{index + 1}</span>
+              <span className="quad-content">
+                {quad.index !== undefined ? `[${quad.index}]` : `[${index}]`} - {quad.operator} {quad.arg1 || ''} {quad.arg2 || ''} {quad.result || ''}
+              </span>
             </div>
-
-            <div className="comparison-view">
-                <div className="code-column">
-                    <h4>📄 Código Original</h4>
-                    <div className="code-container">
-                        {/* --- 4. CORRECCIÓN: Hacer .map() sobre el array --- */}
-                        {originalQuads.map((quad, index) => (
-                            <div key={index} className="quadruple-line">
-                                <span className="quad-index">[{quad.index}]</span>
-                                <span className="quad-operator">{quad.operator}</span>
-                                <span className="quad-arg">{quad.arg1 || ''}</span>
-                                <span className="quad-arg">{quad.arg2 || ''}</span>
-                                <span className="quad-result">{quad.result || ''}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="code-column">
-                    <h4>🚀 Código Optimizado</h4>
-                    <div className="code-container">
-                        {/* --- 5. CORRECCIÓN: Hacer .map() sobre el array --- */}
-                        {optimizedQuads.map((quad, index) => (
-                            <div key={index} className="quadruple-line optimized">
-                                <span className="quad-index">[{quad.index}]</span>
-                                <span className="quad-operator">{quad.operator}</span>
-                                <span className="quad-arg">{quad.arg1 || ''}</span>
-                                <span className="quad-arg">{quad.arg2 || ''}</span>
-                                <span className="quad-result">{quad.result || ''}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+          ))}
         </div>
+      </div>
     );
+  };
+
+  const calculateStats = () => {
+    if (!original || !optimized) return null;
+
+    const originalCount = original.quadruples ? original.quadruples.length : 0;
+    const optimizedCount = optimized.quadruples ? optimized.quadruples.length : 0;
+    const reduction = originalCount > 0 ? ((originalCount - optimizedCount) / originalCount) * 100 : 0;
+
+    return {
+      originalCount,
+      optimizedCount,
+      reduction: Math.round(reduction * 100) / 100
+    };
+  };
+
+  const stats = calculateStats();
+
+  return (
+    <div className="optimization-viewer">
+      <h3>Optimización de Código</h3>
+      
+      {stats && (
+        <div className="optimization-stats">
+          <div className="stat-card">
+            <div className="stat-value">{stats.originalCount}</div>
+            <div className="stat-label">Cuádruplos Originales</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{stats.optimizedCount}</div>
+            <div className="stat-label">Cuádruplos Optimizados</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{stats.reduction}%</div>
+            <div className="stat-label">Reducción</div>
+            {stats.reduction > 0 && (
+              <div className="stat-improvement">✓ Mejora aplicada</div>
+            )}
+            {stats.reduction === 0 && (
+              <div className="stat-label">Sin cambios</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="comparison-container">
+        {renderQuadruples(original, "Código Original", false)}
+        {renderQuadruples(optimized, "Código Optimizado", true)}
+      </div>
+
+      {(!original && !optimized) && (
+        <div className="placeholder">
+          Compila un programa para ver la optimización de código
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default OptimizationViewer;
